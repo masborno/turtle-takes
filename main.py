@@ -1,14 +1,37 @@
 import os.path
+import json
+import sys
 import pandas as pd
 from math import radians, sin, cos, sqrt, atan2
 
 
 def main():
+    # Load configuration
+    config = load_config()
+    projects_file = config['projects_file']
+    turtles_file = config['turtles_file']
+    updated_turtles_file = config['output_file']
+
+    # Ensure output directory exists
+    os.makedirs(os.path.dirname(updated_turtles_file), exist_ok=True)
+
+    # Check if input files exist
+    if not os.path.exists(projects_file):
+        print(f"Error: Projects file not found: {projects_file}")
+        sys.exit(1)
+    if not os.path.exists(turtles_file):
+        print(f"Error: Turtles file not found: {turtles_file}")
+        sys.exit(1)
+
+    print(f"Using files:")
+    print(f"  Projects: {projects_file}")
+    print(f"  Turtles: {turtles_file}")
+    print(f"  Output: {updated_turtles_file}")
+
     # File paths - modify these to match your actual files
     projects_file = os.path.join("data", "v_project_summary_export_1_3_2025.xlsx")
     turtles_file = os.path.join("data", "20250204_AsbornoUSACE_STSSN.xlsx")
-    output_file = "project_presence_results.xlsx"
-    updated_turtles_file = "updated_turtles.xlsx"
+    updated_turtles_file = os.path.join("output", "updated_turtles.xlsx")
 
     # Load and validate data
     projects_df, turtles_df_original = load_data(projects_file, turtles_file)
@@ -17,19 +40,24 @@ def main():
     turtles_df = turtles_df_original.copy()
     valid_turtles_df = turtles_df.dropna(subset=['latitude', 'longitude'])
 
-    # Run analysis and get near_project results
-    project_results, near_project_dict = check_turtle_projects(projects_df, valid_turtles_df)
+    # Run analysis and get near_project results for both distance thresholds
+    near_project_dict_5km, near_project_dict_15km = check_turtle_projects(
+        projects_df, valid_turtles_df
+    )
 
-    # Update the original dataframe with near_project information
-    turtles_df_original['near_project'] = 'No'  # Default value
-    for stssnID, near_status in near_project_dict.items():
-        turtles_df_original.loc[turtles_df_original['stssnID'] == stssnID, 'near_project'] = near_status
+    # Update the original dataframe with near_project information for both thresholds
+    turtles_df_original['near_project_5km'] = 'No'  # Default value
+    turtles_df_original['near_project_15km'] = 'No'  # Default value
 
-    # Save results
-    project_results.to_excel(output_file, index=False)
+    for stssnID, near_status in near_project_dict_5km.items():
+        turtles_df_original.loc[turtles_df_original['stssnID'] == stssnID, 'near_project_5km'] = near_status
+
+    for stssnID, near_status in near_project_dict_15km.items():
+        turtles_df_original.loc[turtles_df_original['stssnID'] == stssnID, 'near_project_15km'] = near_status
+
+    # Save updated turtle data
     turtles_df_original.to_excel(updated_turtles_file, index=False)
-    print(f"Analysis complete. Project results saved to {output_file}")
-    print(f"Updated turtle data saved to {updated_turtles_file}")
+    print(f"Analysis complete. Updated turtle data saved to {updated_turtles_file}")
 
 
 def load_data(projects_path, turtles_path):
@@ -74,22 +102,22 @@ def load_data(projects_path, turtles_path):
     return projects, turtles
 
 
-def check_turtle_projects(projects_df, turtles_df, radius_km=5):
+def check_turtle_projects(projects_df, turtles_df, radius_5km=5, radius_15km=15):
     """
-    Check if turtles are present near project locations.
+    Check if turtles are present near project locations using two distance thresholds.
 
     Returns:
-        - DataFrame with project results
-        - Dictionary mapping turtle IDs to near_project status ('Yes'/'No')
+        - Dictionary mapping turtle IDs to near_project_5km status ('Yes'/'No')
+        - Dictionary mapping turtle IDs to near_project_15km status ('Yes'/'No')
     """
-    project_results = []
-
-    # Dictionary to track which turtles are near projects
-    near_project_dict = {}
+    # Dictionaries to track which turtles are near projects at different distances
+    near_project_dict_5km = {}
+    near_project_dict_15km = {}
 
     # Initialize all turtles as 'No'
     for _, turtle in turtles_df.iterrows():
-        near_project_dict[turtle['stssnID']] = 'No'
+        near_project_dict_5km[turtle['stssnID']] = 'No'
+        near_project_dict_15km[turtle['stssnID']] = 'No'
 
     # Filter out projects with invalid coordinates
     valid_projects_df = projects_df.dropna(subset=['dredging_lat', 'dredging_lng'])
@@ -108,34 +136,48 @@ def check_turtle_projects(projects_df, turtles_df, radius_km=5):
 
         # Skip if no turtles in time range
         if temp_turtles.empty:
-            project_results.append({
-                'odess_project_id': project['odess_project_id'],
-                'project_name': project['project_name'],
-                'turtle_present': 'No'
-            })
             continue
 
-        # Spatial check
-        project_presence = False
+        # Spatial check for both thresholds
         for _, turtle in temp_turtles.iterrows():
             distance = haversine(
                 project['dredging_lat'], project['dredging_lng'],
                 turtle['latitude'], turtle['longitude']
             )
 
-            if distance <= radius_km:
-                project_presence = True
-                # Mark this turtle as near a project
-                near_project_dict[turtle['stssnID']] = 'Yes'
+            if distance <= radius_5km:
+                near_project_dict_5km[turtle['stssnID']] = 'Yes'
 
-        project_results.append({
-            'odess_project_id': project['odess_project_id'],
-            'project_name': project['project_name'],
-            'turtle_present': 'Yes' if project_presence else 'No'
-        })
+            if distance <= radius_15km:
+                near_project_dict_15km[turtle['stssnID']] = 'Yes'
 
-    return pd.DataFrame(project_results), near_project_dict
+    return near_project_dict_5km, near_project_dict_15km
 
+
+def load_config():
+    """Load configuration from config.json or create with defaults if not present."""
+    config_path = 'config.json'
+    default_config = {
+        "projects_file": os.path.join("data", "project_report_summary.xlsx"),
+        "turtles_file": os.path.join("data", "STSSN_File.xlsx"),
+        "output_file": os.path.join("output", "updated_turtles.xlsx")
+    }
+
+    # Create default config if it doesn't exist
+    if not os.path.exists(config_path):
+        with open(config_path, 'w') as f:
+            json.dump(default_config, f, indent=4)
+        print(f"Created default config file: {config_path}")
+
+    # Load config
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        return config
+    except Exception as e:
+        print(f"Error loading config: {e}")
+        print("Using default configuration instead.")
+        return default_config
 
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate distance between two GPS points in kilometers"""

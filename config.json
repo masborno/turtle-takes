@@ -1,0 +1,5 @@
+{
+    "projects_file": "data/v_project_summary_export_1_3_2025.xlsx",
+    "turtles_file": "data/20250204_AsbornoUSACE_STSSN.xlsx",
+    "output_file": "output/updated_turtles.xlsx"
+}
