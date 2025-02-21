@@ -28,11 +28,6 @@ def main():
     print(f"  Turtles: {turtles_file}")
     print(f"  Output: {updated_turtles_file}")
 
-    # File paths - modify these to match your actual files
-    projects_file = os.path.join("data", "v_project_summary_export_1_3_2025.xlsx")
-    turtles_file = os.path.join("data", "20250204_AsbornoUSACE_STSSN.xlsx")
-    updated_turtles_file = os.path.join("output", "updated_turtles.xlsx")
-
     # Load and validate data
     projects_df, turtles_df_original = load_data(projects_file, turtles_file)
 
