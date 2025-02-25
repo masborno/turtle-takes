@@ -1,5 +1,6 @@
 {
-    "projects_file": "data/v_project_summary_export_1_3_2025.xlsx",
-    "turtles_file": "data/20250204_AsbornoUSACE_STSSN.xlsx",
-    "output_file": "output/updated_turtles.xlsx"
+    "projects_file": "data/project_summary_export_1_3_2025.xlsx",
+    "turtles_file": "data/20250204_USACE_STSSN_report.xlsx",
+    "output_file": "output/updated_STSSN_report.xlsx",
+    "distance_thresholds": [5, 10, 15]
 }
