@@ -1,17 +1,8 @@
-## Input Data Format
-
-### Project Data File
-Required columns (case-insensitive, supports various formats):
-- `dqm_start_date`: Project# Sea Turtle Stranded and Salvaged Network Analysis Tool
-
-A Python tool for analyzing sea turtle stranding data in relation to project locations, identifying turtles found within configurable distances of active projects.
-
 ## Features
 
 - Configurable distance thresholds for proximity analysis
 - Support for additional location points beyond project data
 - Performance optimization options including spatial indexing
-- Comprehensive reporting with multiple distance thresholds
 - Case-insensitive column name handling with support for various naming formats
 
 ## Setup Instructions
