@@ -3,24 +3,16 @@
 # Input/Output file paths
 files:
   projects: "data/project_summary_export_1_3_2025.xlsx"
-  turtles: "data/ACOE.consult.ST_strandings.02.26.2025.xlsx"
+  turtles: "data/20250204_USACE_STSSN_report.xlsx"
   output: "output/updated_STSSN_report.xlsx"
 
 # Analysis parameters
 analysis:
   # Multiple distance thresholds in kilometers
-  distance_thresholds: [10]
-
-  # Optional additional locations to check
-  additional_locations:
-    enabled: false  # Set to true to enable additional location checking
-    locations:
-      - latitude: 28.3852
-        longitude: -80.6052
-      - latitude: 27.8494
-        longitude: -80.4478
+  distance_thresholds: [5, 10, 15]
 
 # Performance settings
 performance:
   use_spatial_index: true
+  use_parallel: true
   batch_size: 1000
